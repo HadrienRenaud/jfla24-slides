@@ -1,0 +1,476 @@
+\documentclass[10pt, dvipsnames]{beamer}
+
+%\setbeameroption{show notes}
+%\setbeameroption{show only notes}
+%\setbeameroption{show notes on second screen=right}
+%\usetheme{Madrid}
+
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+
+\usepackage{listings}  % For code
+\usepackage{graphicx}  % For figures
+\usepackage{caption}  % For figure captions
+\usepackage{subcaption}  % For subfigure captions
+\usepackage{comment}
+\usepackage{tabularx}  % for more controls on tables
+\usepackage{adjustbox}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+
+\lstset{basicstyle=\ttfamily\scriptsize}
+
+\newcommand\mailto[1]{\href{mailto:#1}{\nolinkurl{#1}}}
+
+\title{Executable semantics of ASL}
+\author{Hadrien Renaud}
+\institute{University College London}
+\date{\today}
+
+\newtheorem{intuition}{Intuition}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage{}
+  \note[item]{ASL means Architecture Specification Language}
+  \note[item]{ASL is used by Arm to describe the operation of the AArch64 instructions}
+  \note[item]{%
+    We are going to see a main application of giving semantics to ASL:\
+    describing the operation of specific instructions, namely Compare-And-Swap
+    CAS}
+  \note[item]{For this talk, I want to approach the subject from the Programming Language point of vue}
+  \note[item]{We approach the memory model by using Litmus tests}
+\end{frame}
+
+\begin{frame}[fragile]{Objectifs}
+  \centering
+  \begin{tikzpicture}[remember picture, outer sep=4.8pt, >=Stealth]
+    \node (instr) at (0, 3) [anchor=south, align=center]
+      {\texttt{CAS Xs, Xt, [Xn]}};
+    \node (code) at (-1,0) [anchor=east, text width=.4\textwidth, inner ysep=-1em]
+      {\lstinputlisting%
+        %[frame=shadowbox]%
+        %[basicstyle=\ttfamily\tiny]%
+        {asl/cas.asl}};
+    \node (graph) at (1,0) [anchor=west, text width=.4\textwidth]
+      {\includegraphics%
+        [ trim={1.3cm, 1.5cm, 2.2cm, 1.5cm}, clip, % left lower right upper
+          width=\textwidth, height=\textheight, keepaspectratio]%
+        {graphs/old/cas-ok.pdf}};
+
+    \draw[->, thick] (instr) -- (code)
+      node [midway, sloped, above, align=center, node font=\small] {Reference\\Manual};
+    \draw[->, thick] (instr) -- (graph)
+      node [midway, sloped, above, node font=\small] {herd7};
+    \draw<1>[<->, very thick, dashed, node font=\huge] (code) -- (graph)
+      node [midway] {?};
+    \draw<2>[->, thick] (code) -- (graph);
+  \end{tikzpicture}
+\end{frame}
+
+\begin{comment}
+\subsection{LDR}
+
+\begin{frame}{A plain load: \texttt{LDR Xd, [Xn]}}
+  Approximativement:
+  \begin{enumerate}
+    \item Lit l'adresse $x$ depuis le registre \texttt{Xn};
+    \item Lit la valeur $v$ depuis la case m\'emoire \`a l'adresse $x$;
+    \item \'Ecris la valeur $v$ dans le registre \texttt{Xd}.
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}[fragile]{A plain load: \texttt{LDR Xd, [Xn]}}
+  Simplified ASL code:
+
+  \centering%
+  \lstinputlisting{asl/ldr.asl}
+\end{frame}
+\begin{frame}{A plain load: \texttt{LDR Xd, [Xn]}}
+  \texttt{herd7} generated graph:
+
+  \begin{figure}
+    \includegraphics%
+      [width=\textwidth, height=.9\textheight, keepaspectratio]%
+      {graphs/LDR.pdf}
+    \caption{\texttt{herd7} generated graph for the instruction \texttt{LDR Xd, [Xn]}}
+  \end{figure}
+\end{frame}
+\end{comment}
+
+\subsection{CAS}
+
+\begin{frame}{Compare-And-Swap \texttt{CAS Xs, Xt, [Xn]} - s\'emantique informelle}
+  Approximativement:
+  \begin{itemize}
+    \item Lire l'adresse $x$ depuis le registre \texttt{Xn}.
+    \item Lire la valeur \`a comparer $v_c$ depuis le registre \texttt{Xs}.
+    \item Lire la nouvelle valeur $v_n$ depuis le registre \texttt{Xt}.
+    \item Lire la valeur $v_m$ dans la case m\'emoire est donn\'ee par l'adresse $x$.
+    \item Si $v_m = v_c$, \'ecrire la valeur $v_n$ en m\'emoire \`a l'adresse $x$.
+    \item \'Ecrire la valeur $v_m$ dans le registre \texttt{Xs}.
+  \end{itemize}
+
+  \pause
+  \vfill
+  2 cas:
+  \begin{description}
+    \item[``ok''] si la condition est vraie, et que l'\'ecriture m\'emoire se produit;
+    \item[``no''] sinon.
+  \end{description}
+\end{frame}
+
+\begin{frame}[fragile]{Compare-And-Swap \texttt{CAS Xs, Xt, [Xn]} en ASL}
+  Code ASL simplifi\'e :
+  \vspace{1em}
+
+  \begin{tabular}{l l}
+    \texttt{let address = X[n];}
+    & \only<2>{Lire $x$ depuis le registre \texttt{Xn}.}\\
+    \texttt{let compare\_value = X[s];}
+    & \only<2>{Lire $v_c$ depuis le registre \texttt{Xs}.}\\
+    \texttt{let new\_value = X[t];}
+    & \only<2>{Lire $v_n$ depuis le registre \texttt{Xt}.}\\
+    \texttt{let data = Mem[address];}
+    & \only<2>{Lire $v_m$ en m\'emoire \`a l'adresse $x$.}\\
+    \texttt{if data == compare\_value then}
+    & \only<2>{Si $v_m = v_c$, \ldots}\\
+    \texttt{\ \ Mem[address] = new\_value;}
+    & \only<2>{\'ecrire $v_n$ en m\'emoire \`a l'address $x$. }\\
+    \texttt{end}
+    & \only<2>{}\\
+    \texttt{X[s] = data;}
+    & \only<2>{\'Ecrire $v_m$ dans le registre \texttt{Xs}.}\\
+  \end{tabular}
+
+  \note{C'est le code ASL qui est dans le Arm ARM.}
+\end{frame}
+
+\begin{frame}{Compare-And-Swap \texttt{CAS Xs, Xt, [Xn]}}
+  Graphe g\'en\'er\'e par \texttt{herd7} :
+
+  \begin{figure}
+    \includegraphics%
+      [width=\textwidth, height=.9\textheight, keepaspectratio]%
+      {graphs/old/cas-ok.pdf}
+    \caption{Graphe g\'en\'er\'e par \texttt{herd7} pour l'instruction \texttt{CAS Xs, Xt, [Xn]} dans le cas ok}
+  \end{figure}
+\end{frame}
+
+\begin{frame}[fragile]{Objectifs}
+  \centering
+  \begin{tikzpicture}[remember picture, outer sep=4.8pt]
+    \node (code) at (-1,0) [anchor=east, text width=.4\textwidth]
+      {\lstinputlisting%
+        %[basicstyle=\ttfamily\tiny]%
+        {asl/cas.asl}};
+    \node (graph) at (1,0) [anchor=west, text width=.4\textwidth]
+      {\includegraphics%
+        [ trim={1.3cm, 1.5cm, 2.2cm, 1.5cm}, clip, % left lower right upper
+          width=\textwidth, height=\textheight, keepaspectratio]%
+        {graphs/old/cas-ok.pdf}};
+      \node (instr-text) at (0, -2) [align=center, anchor=north]
+        {S\'emantique des instructions AArch64};
+
+    \draw[-Stealth, very thick] (code) -- (graph);
+  \end{tikzpicture}
+  \note{%
+    Arm utilise les deux formats, donc c'est int\'eressant et n\'ecessaire pour Arm de les comparer.
+    \\
+    contraintes d'ordres => fl\`eches de herd7
+    }
+
+\end{frame}
+
+\begin{frame}{D\'ependances d'addresse ou de donn\'ee}
+  \begin{columns}[c]
+    \begin{column}{.59\textwidth}
+
+      Ordonne une lecture m\'emoire et un autre acc\`es m\'emoire.
+
+      \vspace{1em}
+      Inclus des \emph{D\'ependances intra-instruction de donn\'ee}.
+
+      \vspace{2em}
+      Exemple:
+      \lstinputlisting{graphs/MP+dmb+addr.litmus}
+    \end{column}
+    \hfill
+    \begin{column}{.4\textwidth}
+      \centering
+      \only<1>{%
+        \includegraphics%
+          [width=\textwidth, height=.8\textheight, keepaspectratio]%
+          {graphs/MP+dmb+addr-basic.pdf}
+      }
+      \only<2>{%
+        \frame{%
+        \includegraphics%
+          [ trim={30cm, 10cm, 1cm, 1cm}, clip, % left lower right upper 
+            width=\textwidth, height=.8\textheight, keepaspectratio]%
+          {graphs/MP+dmb+addr-all.pdf}}
+      }
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Objectifs}
+  \centering
+  \begin{tikzpicture}[remember picture, outer sep=4.8pt, >=Stealth]
+    \node (instr) at (0, 3) [anchor=south, align=center]
+      {\texttt{CAS Xs, Xt, [Xn]}};
+    \node (code) at (-1,0) [anchor=east, text width=.4\textwidth, inner ysep=-1em]
+      {\lstinputlisting%
+        %[frame=shadowbox]%
+        %[basicstyle=\ttfamily\tiny]%
+        {asl/cas.asl}};
+    \node (graph) at (1,0) [anchor=west, text width=.4\textwidth]
+      {\includegraphics%
+        [ trim={1.3cm, 1.5cm, 2.2cm, 1.5cm}, clip, % left lower right upper
+          width=\textwidth, height=\textheight, keepaspectratio]%
+        {graphs/old/cas-ok.pdf}};
+
+    \draw[->, thick] (instr) -- (code)
+      node [midway, sloped, above, align=center, node font=\small] {Reference\\Manual};
+    \draw[->, thick] (instr) -- (graph)
+      node [midway, sloped, above, node font=\small] {herd7};
+    \draw[->, thick] (code) -- (graph);
+  \end{tikzpicture}
+\end{frame}
+
+\begin{frame}{D\'ependances intra-instruction de donn\'ees}
+  \begin{intuition}
+    Pour $a, b$ deux \'ev\`enements :
+    \[
+      a \xrightarrow{\texttt{iico\_data}} b \quad \iff \quad b\ \text{utilise des donn\'ees d\'efinies dans}\ a
+    \]
+  \end{intuition}
+
+  \vfill
+  Exemple: \texttt{LDR Xd, [Xn]}
+
+  \begin{columns}[c]
+    \hfill
+    \begin{column}{.3\textwidth}
+      \centering
+      \lstinputlisting{asl/ldr.asl}
+    \end{column}
+    \hfill
+    \begin{column}{.3\textwidth}
+      \centering
+      \includegraphics%
+        [width=\textwidth, height=.5\textheight, keepaspectratio]%
+        {graphs/LDR.pdf}
+    \end{column}
+    \hfill
+  \end{columns}
+\end{frame}
+
+\begin{frame}{D\'ependances intr-instruction de contr\^ole}
+  Une autre sorte de d\'ependances intra-instructions!
+
+  \begin{intuition}
+    Pour $a, b$ deux \'ev\`enements :
+    \[
+      a \xrightarrow{\texttt{iico\_ctrl}} b
+      \quad \iff \quad
+      b\ \text{est dans un \texttt{if} dont la condition utilise}\ a
+    \]
+  \end{intuition}
+
+  \vfill
+  Exemple: \texttt{CSEL Xd, Xn, Xm, cond}
+
+  \begin{columns}[c]
+    \begin{column}{.3\textwidth}
+      \lstinputlisting{asl/csel.asl}
+    \end{column}
+    \hfill
+    \begin{column}{.3\textwidth}
+      \includegraphics%
+        [width=\textwidth, height=.7\textheight, keepaspectratio]%
+        {graphs/csel.pdf}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Objectifs}
+  \centering
+  \begin{tikzpicture}[remember picture, outer sep=4.8pt, >=Stealth]
+    \node (instr) at (0, 3) [anchor=south, align=center]
+      {\texttt{CAS Xs, Xt, [Xn]}};
+    \node (code) at (-1,0) [anchor=east, text width=.4\textwidth, inner ysep=-1em]
+      {\lstinputlisting%
+        %[frame=shadowbox]%
+        %[basicstyle=\ttfamily\tiny]%
+        {asl/cas.asl}};
+    \node (graph) at (1,0) [anchor=west, text width=.4\textwidth]
+      {\includegraphics%
+        [ trim={1.3cm, 1.5cm, 2.2cm, 1.5cm}, clip, % left lower right upper
+          width=\textwidth, height=\textheight, keepaspectratio]%
+        {graphs/old/cas-ok.pdf}};
+
+    \draw[->, thick] (instr) -- (code)
+      node [midway, sloped, above, align=center, node font=\small] {Reference\\Manual};
+    \draw[->, thick] (instr) -- (graph)
+      node [midway, sloped, above, node font=\small] {herd7};
+    \draw[->, thick] (code) -- (graph)
+      node [midway, below] {\emph{ASLRef}};
+  \end{tikzpicture}
+
+  \note{ASLRef = notre interpreteur, qui construit ces graphes, et que Arm utiliser comme interpreteur officiel.}
+\end{frame}
+
+\begin{frame}{Application \`a \texttt{CAS}}
+  Code ASL simplifi\'e :
+      \lstinputlisting{asl/cas.asl}
+
+  Graphe g\'en\'er\'e :
+      \includegraphics%
+        [ trim={1.3cm, 1.5cm, 2.2cm, 1.5cm}, clip, % left lower right upper
+          width=\textwidth, height=.5\textheight, keepaspectratio]%
+        {graphs/asl/cas-ok.pdf}
+\end{frame}
+
+\begin{frame}{Oh oh, il y a une divergeance}
+  \begin{columns}[T]
+    \begin{column}{.49\textwidth}
+      Graphe g\'en\'er\'e par herd7:
+      \vspace{1em}
+
+      \only<1>{%
+        \includegraphics%
+          [ trim={1.3cm, 1.5cm, 2.2cm, 1.5cm}, clip, % left lower right upper
+            width=\textwidth, height=.9\textheight, keepaspectratio]%
+          {graphs/old/cas-ok.pdf}
+        }
+      \only<2>{%
+        \frame{%
+        \includegraphics%
+          [trim={1cm, 1cm, 8cm, 1.5cm}, clip, % left lower right upper
+           width=\textwidth, height=.9\textheight, keepaspectratio]%
+          {graphs/old/cas-ok-bolden.pdf}}}
+    \end{column}
+    \hfill
+    \begin{column}{.49\textwidth}
+      Graphe g\'en\'er\'e depuis le code ASL :
+      \vspace{1em}
+
+      \only<1>{%
+        \includegraphics%
+          [ trim={1.3cm, 1.5cm, 2.2cm, 1.5cm}, clip, % left lower right upper
+            width=\textwidth, height=.9\textheight, keepaspectratio]%
+          {graphs/asl/cas-ok.pdf}
+        }
+      \only<2>{%
+        \frame{%
+        \includegraphics%
+          [trim={10cm, 1cm, 1cm, 1cm}, clip, % left lower right upper
+           width=\textwidth, height=.9\textheight, keepaspectratio]%
+          {graphs/asl/cas-ok-bolden.pdf}}}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Compare-And-Swap \texttt{CAS Xs, Xt, [Xn]} - s\'emantique informelle}
+  Approximativement:
+  \begin{itemize}%
+      \color{gray}
+    \item Lire l'adresse $x$ depuis le registre \texttt{Xn}.
+    \item Lire la valeur \`a comparer $v_c$ depuis le registre \texttt{Xs}.
+    \item Lire la nouvelle valeur $v_n$ depuis le registre \texttt{Xt}.
+    \item Lire la valeur $v_m$ dans la case m\'emoire est donn\'ee par l'adresse $x$.
+      \color{black}
+    \item Si $v_m = v_c$, \'ecrire la valeur $v_n$ en m\'emoire \`a l'adresse $x$.
+    \item \'Ecrire la valeur $v_m$ dans le registre \texttt{Xs}.
+  \end{itemize}
+  \vfill
+  On est ici dans le cas o\`u $v_m = v_c$!
+\end{frame}
+
+\begin{frame}[fragile]{Question}
+  De qui est-ce la faute? ASL ou herd7?
+
+  \vfill
+  Est-ce que c'est si important que ça?
+
+  \pause
+  \vfill
+  Ces programmes ont des comportements diff\'erents en fonction de quelle fl\`eche est l\`a :
+
+  \begin{columns}[T]
+    \hfill
+    \begin{column}{.4\textwidth}
+      \lstinputlisting[basicstyle=\tiny\ttfamily]{graphs/MP+rel+CAS-ok-RsRs-addr.litmus}
+    \end{column}
+    \hfill
+    \begin{column}{.4\textwidth}
+      \lstinputlisting[basicstyle=\tiny\ttfamily]{graphs/MP+rel+CAS-ok-MRs-addr.litmus}
+    \end{column}
+    \hfill
+    %\begin{column}{.3\textwidth}
+      %\lstinputlisting[basicstyle=\tiny\ttfamily]{graphs/MP+rel+CAS-ok-bothRs-addr.litmus}
+    %\end{column}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{R\'eponse}
+  Les deux sont valides.
+
+  \vspace{1em}
+  Choix non d\'eterministe entre les deux graphes!
+
+  \vspace{1em}
+  Rafiner l'intention des architectes pour la s\'emantique des instructions.
+\end{frame}
+
+\begin{frame}{Conclusion}
+  \begin{itemize}
+    \item Patch\'e dans herd7, discussion en cours dans Arm pour ASL.
+
+    \vfill
+    \item Code de l'interpr\'eteur dans
+      \url{https://github.com/herd/herdtools7/blob/master/asllib}.
+
+    \vfill
+    \item Documents de r\'ef\'erence ASL
+      \url{https://developer.arm.com/documentation/DDI0621/00alp0}.
+
+    \vfill
+    \item Beaucoup de questions de type-checking, existent aussi au m\^eme endroit
+      \url{https://developer.arm.com/documentation/DDI0622/00alp0}.
+
+    \vfill
+    \item
+        Projet plus vaste men\'e \`a Arm avec:
+        \vspace{1em}
+        \begin{columns}[T]
+          \begin{column}{.3\textwidth}
+            \centering
+            Jade Alglave \\
+            \footnotesize\mailto{j.alglave@ucl.ac.uk} \\
+            \footnotesize\mailto{memory-model@arm.com} \\
+          \end{column}
+          \begin{column}{.3\textwidth}
+            \centering
+            Luc Maranget \\
+            \footnotesize\mailto{Luc.Maranget@inria.fr} \\
+          \end{column}
+          \begin{column}{.35\textwidth}
+            \centering
+            et moi \\
+            \footnotesize\mailto{hadrien.renaud.22@ucl.ac.uk} \\
+            \footnotesize\mailto{hadrien.renaud2@arm.com} \\
+          \end{column}
+        \end{columns}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \centering
+  \huge%
+  Merci !
+\end{frame}
+
+\end{document}

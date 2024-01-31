@@ -1,0 +1,9 @@
+AArch64 LDR
+
+{
+  int64_t 0: X1 = 1;
+  int64_t 0: X2 = 2;
+}
+
+P0 ;
+CSEL X3, X2, X1, EQ;

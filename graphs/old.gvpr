@@ -1,0 +1,10 @@
+N {
+  label = sub(label, "'0000000000000000000000000000000000000000000000000000000000000011'", "3");
+  width = length(label)*14/72;
+  if (label == "a: !(.)") { label = sub(label, "a", "b"); } else
+  if (label == "b: !(.)") { label = sub(label, "b", "a"); } else
+  if (label == "d: !(.)") { label = sub(label, "d", "g"); } else
+  if (label == "e: !(.)") { label = sub(label, "e", "d"); } else
+  if (label == "g: !(.)") { label = sub(label, "g", "e"); }
+}
+

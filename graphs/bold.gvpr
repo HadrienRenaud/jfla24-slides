@@ -1,0 +1,4 @@
+E [label == "iico_data" && head.label == "g: !(.)" && (tail.label == "[ae]: !(.)")]{
+  penwidth = 3;
+  label = "𝗶𝗶𝗰𝗼_𝗱𝗮𝘁𝗮";
+}

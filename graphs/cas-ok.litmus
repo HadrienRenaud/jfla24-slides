@@ -1,0 +1,9 @@
+AArch64 cas-ok
+{
+  x = 5;
+  0: X1 = 5; 0: X2 = 3; 0: X3 = x;
+}
+P0                     ;
+CAS X1, X2, [X3]       ;
+exists ( x = 3 /\ 0: X1 = 5 )
+
