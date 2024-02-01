@@ -22,11 +22,11 @@
 
 \newcommand\mailto[1]{\href{mailto:#1}{\nolinkurl{#1}}}
 
-\title[Executable semantics of ASL]{Executable semantics of Arm's Architecture Specification Language}
+\title[Executable semantics of ASL]{Executable semantics of Arm's\\ Architecture Specification Language}
 \subtitle{and application to \texttt{CAS}}
 \author{Hadrien Renaud}
 \institute[UCL]{University College London}
-\date{\today}
+\date{JFLA 2024}
 
 \newtheorem{intuition}{Intuition}
 
@@ -390,11 +390,8 @@
   On est ici dans le cas o\`u $v_m = v_c$!
 \end{frame}
 
-\begin{frame}[fragile]{Question}
-  De qui est-ce la faute? ASL ou herd7?
-
-  \vfill
-  Est-ce que c'est si important que ça?
+\begin{frame}[fragile]{Est-ce que c'est grave?}
+  On \'ecrit la m\^eme valeur \dots
 
   \pause
   \vfill
@@ -416,11 +413,12 @@
   \end{columns}
 \end{frame}
 
-\begin{frame}{R\'eponse}
-  Les deux sont valides.
+\begin{frame}{\`A qui la faute?}
+  ASL ou herd7?
 
+  \pause
   \vspace{1em}
-  Choix non d\'eterministe entre les deux graphes!
+  Les deux sont valides: choix non d\'eterministe entre les deux graphes!
 
   \vspace{1em}
   Rafiner l'intention des architectes pour la s\'emantique des instructions.
@@ -466,12 +464,6 @@
           \end{column}
         \end{columns}
   \end{itemize}
-\end{frame}
-
-\begin{frame}
-  \centering
-  \huge%
-  Merci !
 \end{frame}
 
 \end{document}
