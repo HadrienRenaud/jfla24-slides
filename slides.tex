@@ -3,7 +3,7 @@
 %\setbeameroption{show notes}
 %\setbeameroption{show only notes}
 %\setbeameroption{show notes on second screen=right}
-%\usetheme{Madrid}
+\usetheme{Boadilla}
 
 \usepackage[T1]{fontenc}
 \usepackage[french]{babel}
@@ -22,9 +22,10 @@
 
 \newcommand\mailto[1]{\href{mailto:#1}{\nolinkurl{#1}}}
 
-\title{Executable semantics of ASL}
+\title[Executable semantics of ASL]{Executable semantics of Arm's Architecture Specification Language}
+\subtitle{and application to \texttt{CAS}}
 \author{Hadrien Renaud}
-\institute{University College London}
+\institute[UCL]{University College London}
 \date{\today}
 
 \newtheorem{intuition}{Intuition}
@@ -48,7 +49,7 @@
   \begin{tikzpicture}[remember picture, outer sep=4.8pt, >=Stealth]
     \node (instr) at (0, 3) [anchor=south, align=center]
       {\texttt{CAS Xs, Xt, [Xn]}};
-    \node (code) at (-1,0) [anchor=east, text width=.4\textwidth, inner ysep=-1em]
+    \node (code) at (-1,0) [anchor=east, text width=.37\textwidth, inner ysep=-1em]
       {\lstinputlisting%
         %[frame=shadowbox]%
         %[basicstyle=\ttfamily\tiny]%
@@ -154,14 +155,14 @@
     \includegraphics%
       [width=\textwidth, height=.9\textheight, keepaspectratio]%
       {graphs/old/cas-ok.pdf}
-    \caption{Graphe g\'en\'er\'e par \texttt{herd7} pour l'instruction \texttt{CAS Xs, Xt, [Xn]} dans le cas ok}
+    \caption{Graphe g\'en\'er\'e par \texttt{herd7} pour l'instruction \texttt{CAS X1, X2, [X3]} dans le cas ok}
   \end{figure}
 \end{frame}
 
 \begin{frame}[fragile]{Objectifs}
   \centering
   \begin{tikzpicture}[remember picture, outer sep=4.8pt]
-    \node (code) at (-1,0) [anchor=east, text width=.4\textwidth]
+    \node (code) at (-1,0) [anchor=east, text width=.37\textwidth]
       {\lstinputlisting%
         %[basicstyle=\ttfamily\tiny]%
         {asl/cas.asl}};
@@ -220,7 +221,7 @@
   \begin{tikzpicture}[remember picture, outer sep=4.8pt, >=Stealth]
     \node (instr) at (0, 3) [anchor=south, align=center]
       {\texttt{CAS Xs, Xt, [Xn]}};
-    \node (code) at (-1,0) [anchor=east, text width=.4\textwidth, inner ysep=-1em]
+    \node (code) at (-1,0) [anchor=east, text width=.37\textwidth, inner ysep=-1em]
       {\lstinputlisting%
         %[frame=shadowbox]%
         %[basicstyle=\ttfamily\tiny]%
@@ -267,7 +268,7 @@
   \end{columns}
 \end{frame}
 
-\begin{frame}{D\'ependances intr-instruction de contr\^ole}
+\begin{frame}{D\'ependances intra-instruction de contr\^ole}
   Une autre sorte de d\'ependances intra-instructions!
 
   \begin{intuition}
@@ -300,7 +301,7 @@
   \begin{tikzpicture}[remember picture, outer sep=4.8pt, >=Stealth]
     \node (instr) at (0, 3) [anchor=south, align=center]
       {\texttt{CAS Xs, Xt, [Xn]}};
-    \node (code) at (-1,0) [anchor=east, text width=.4\textwidth, inner ysep=-1em]
+    \node (code) at (-1,0) [anchor=east, text width=.37\textwidth, inner ysep=-1em]
       {\lstinputlisting%
         %[frame=shadowbox]%
         %[basicstyle=\ttfamily\tiny]%
